@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import AddApplicationModal from "@/components/AddApplicationModal"
 import ApplicationCard from "@/components/ApplicationCard"
+import KanbanBoard from "@/components/KanbanBoard"
 
 export type Status = "APPLIED" | "PHONE_SCREEN" | "INTERVIEW" | "OFFER" | "REJECTED"
 
@@ -37,11 +38,14 @@ const STATUS_COLORS: Record<Status, string> = {
 
 export { STATUS_LABELS, STATUS_COLORS }
 
+type View = "list" | "kanban"
+
 export default function DashboardPage() {
   const [applications, setApplications] = useState<Application[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [filterStatus, setFilterStatus] = useState<Status | "ALL">("ALL")
+  const [view, setView] = useState<View>("list")
 
   const fetchApplications = async () => {
     const res = await fetch("/api/applications")
@@ -50,24 +54,28 @@ export default function DashboardPage() {
     setLoading(false)
   }
 
- useEffect(() => {
-  let mounted = true
+  // Update a single application in local state without refetching
+  const updateLocalApplication = (id: string, newStatus: Status) => {
+    setApplications((prev) =>
+      prev.map((app) => (app.id === id ? { ...app, status: newStatus } : app))
+    )
+  }
 
-  const load = async () => {
-    const res = await fetch("/api/applications")
-    const data = await res.json()
-    if (mounted) {
-      setApplications(data)
-      setLoading(false)
+  useEffect(() => {
+    let mounted = true
+    const load = async () => {
+      const res = await fetch("/api/applications")
+      const data = await res.json()
+      if (mounted) {
+        setApplications(data)
+        setLoading(false)
+      }
     }
-  }
-
-  load()
-
-  return () => {
-    mounted = false
-  }
-}, [])
+    load()
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   const filtered =
     filterStatus === "ALL"
@@ -84,45 +92,77 @@ export default function DashboardPage() {
             {applications.length} total applications
           </p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors"
-        >
-          + Add Application
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => setView("list")}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                view === "list"
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              ☰ List
+            </button>
+            <button
+              onClick={() => setView("kanban")}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                view === "kanban"
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              ⊞ Board
+            </button>
+          </div>
+          <button
+            onClick={() => setShowModal(true)}
+            className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors"
+          >
+            + Add Application
+          </button>
+        </div>
       </div>
 
       {/* Filter tabs */}
-      <div className="flex gap-2 mb-6 flex-wrap">
-        {(["ALL", "APPLIED", "PHONE_SCREEN", "INTERVIEW", "OFFER", "REJECTED"] as const).map(
-          (status) => (
-            <button
-              key={status}
-              onClick={() => setFilterStatus(status)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                filterStatus === status
-                  ? "bg-indigo-600 text-white"
-                  : "bg-white text-gray-600 border border-gray-200 hover:border-indigo-300"
-              }`}
-            >
-              {status === "ALL" ? "All" : STATUS_LABELS[status]}
-              {status !== "ALL" && (
-                <span className="ml-1.5 text-xs opacity-70">
-                  {applications.filter((a) => a.status === status).length}
-                </span>
-              )}
-            </button>
-          )
-        )}
-      </div>
+      {view === "list" && (
+        <div className="flex gap-2 mb-6 flex-wrap">
+          {(["ALL", "APPLIED", "PHONE_SCREEN", "INTERVIEW", "OFFER", "REJECTED"] as const).map(
+            (status) => (
+              <button
+                key={status}
+                onClick={() => setFilterStatus(status)}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                  filterStatus === status
+                    ? "bg-indigo-600 text-white"
+                    : "bg-white text-gray-600 border border-gray-200 hover:border-indigo-300"
+                }`}
+              >
+                {status === "ALL" ? "All" : STATUS_LABELS[status]}
+                {status !== "ALL" && (
+                  <span className="ml-1.5 text-xs opacity-70">
+                    {applications.filter((a) => a.status === status).length}
+                  </span>
+                )}
+              </button>
+            )
+          )}
+        </div>
+      )}
 
-      {/* Applications list */}
+      {/* Content */}
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="bg-white rounded-xl p-5 animate-pulse h-24" />
           ))}
         </div>
+      ) : view === "kanban" ? (
+        <KanbanBoard
+          applications={applications}
+          onUpdateLocal={updateLocalApplication}
+          onRefetch={fetchApplications}
+        />
       ) : filtered.length === 0 ? (
         <div className="text-center py-16">
           <p className="text-4xl mb-3">📋</p>
@@ -141,7 +181,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Add modal */}
       {showModal && (
         <AddApplicationModal
           onClose={() => setShowModal(false)}

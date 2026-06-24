@@ -43,7 +43,7 @@ export default function ApplicationCard({ application, onUpdate, onDelete }: Pro
             {editingStatus ? (
               <select
                 autoFocus
-                className="text-xs border border-indigo-300 rounded-full px-2 py-0.5 focus:outline-none"
+                className="text-xs border border-indigo-300 rounded-full px-2 py-0.5 focus:outline-none text-gray-900"
                 value={application.status}
                 onChange={(e) => handleStatusChange(e.target.value as Status)}
                 onBlur={() => setEditingStatus(false)}
@@ -68,14 +68,10 @@ export default function ApplicationCard({ application, onUpdate, onDelete }: Pro
 
           <div className="flex items-center gap-4 mt-2 flex-wrap">
             {application.location && (
-              <span className="text-xs text-gray-400">
-                📍 {application.location}
-              </span>
+              <span className="text-xs text-gray-400">📍 {application.location}</span>
             )}
             {application.salary && (
-              <span className="text-xs text-gray-400">
-                💰 {application.salary}
-              </span>
+              <span className="text-xs text-gray-400">💰 {application.salary}</span>
             )}
             <span className="text-xs text-gray-400">
               📅 Applied {new Date(application.appliedDate).toLocaleDateString()}
