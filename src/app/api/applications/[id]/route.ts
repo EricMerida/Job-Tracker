@@ -16,8 +16,9 @@ const updateSchema = z.object({
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   const session = await getServerSession(authOptions)
 
   if (!session?.user?.email) {
@@ -33,7 +34,7 @@ export async function PATCH(
   }
 
   const application = await prisma.application.findFirst({
-    where: { id: params.id, userId: user.id },
+    where: { id, userId: user.id },
   })
 
   if (!application) {
@@ -48,7 +49,7 @@ export async function PATCH(
   }
 
   const updated = await prisma.application.update({
-    where: { id: params.id },
+    where: { id },
     data: {
       ...parsed.data,
       followUpDate: parsed.data.followUpDate
@@ -63,8 +64,9 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   const session = await getServerSession(authOptions)
 
   if (!session?.user?.email) {
@@ -80,14 +82,14 @@ export async function DELETE(
   }
 
   const application = await prisma.application.findFirst({
-    where: { id: params.id, userId: user.id },
+    where: { id, userId: user.id },
   })
 
   if (!application) {
     return NextResponse.json({ error: "Not found" }, { status: 404 })
   }
 
-  await prisma.application.delete({ where: { id: params.id } })
+  await prisma.application.delete({ where: { id } })
 
   return NextResponse.json({ success: true })
 }
