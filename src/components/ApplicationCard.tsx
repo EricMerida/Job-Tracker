@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { Application, STATUS_LABELS, STATUS_COLORS, Status } from "@/app/dashboard/page"
+import AIModal from "./AIModal"
 
 type Props = {
   application: Application
@@ -12,6 +13,7 @@ type Props = {
 export default function ApplicationCard({ application, onUpdate, onDelete }: Props) {
   const [deleting, setDeleting] = useState(false)
   const [editingStatus, setEditingStatus] = useState(false)
+  const [showAI, setShowAI] = useState(false)
 
   const handleDelete = async () => {
     if (!confirm("Delete this application?")) return
@@ -97,6 +99,12 @@ export default function ApplicationCard({ application, onUpdate, onDelete }: Pro
             </a>
           )}
           <button
+            onClick={() => setShowAI(true)}
+            className="text-xs bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors px-2 py-1 rounded-lg font-medium"
+          >
+            ✨ AI
+          </button>
+          <button
             onClick={handleDelete}
             disabled={deleting}
             className="text-xs text-gray-400 hover:text-red-500 transition-colors"
@@ -105,6 +113,13 @@ export default function ApplicationCard({ application, onUpdate, onDelete }: Pro
           </button>
         </div>
       </div>
+
+      {showAI && (
+        <AIModal
+          application={application}
+          onClose={() => setShowAI(false)}
+        />
+      )}
     </div>
   )
 }
