@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 import { NextRequest, NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -14,16 +15,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
+    select: { profile: true },
+  })
+
   const { company, role, language } = await req.json()
 
   if (!company || !role) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
   }
 
+  const profileContext = user?.profile
+    ? `Here is the candidate's background:\n${user.profile}\n\n`
+    : ""
+
   const prompt =
     language === "es"
-      ? `Soy candidato para el puesto de ${role} en ${company}. Dame 8 preguntas de entrevista probables con consejos breves sobre cómo responder cada una. Formatea como una lista numerada.`
-      : `I am interviewing for a ${role} position at ${company}. Give me 8 likely interview questions with brief tips on how to answer each one. Format as a numbered list with the question bold and the tip on the next line.`
+      ? `${profileContext}Soy candidato para el puesto de ${role} en ${company}. Dame 8 preguntas de entrevista probables con consejos breves sobre cómo responder cada una basándote en mi experiencia. Formatea como una lista numerada.`
+      : `${profileContext}I am interviewing for a ${role} position at ${company}. Give me 8 likely interview questions with brief tips on how to answer each one based on my background. Format as a numbered list with the question bold and the tip on the next line.`
 
   const stream = await anthropic.messages.stream({
     model: "claude-sonnet-4-6",

@@ -33,6 +33,9 @@ export default async function DashboardLayout({
               <Link href="/dashboard/stats" className="text-sm text-gray-600 hover:text-indigo-600 transition-colors">
                 Stats
               </Link>
+              <Link href="/dashboard/profile" className="text-sm text-gray-600 hover:text-indigo-600 transition-colors">
+                Profile
+                </Link>
             </div>
           </div>
           <SignOutButton />
